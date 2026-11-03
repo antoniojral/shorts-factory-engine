@@ -1,0 +1,49 @@
+name: Daily YouTube Shorts Factory
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # Ejecutar diariamente a las 14:00 UTC
+  workflow_dispatch:
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Repositorio
+        uses: actions/checkout@v4
+
+      - name: 📦 Instalar FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📋 Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🎬 Ejecutar main.py
+        env:
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+          GITHUB_OWNER: ${{ secrets.GITHUB_OWNER }}
+          GITHUB_REPO: ${{ secrets.GITHUB_REPO }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          NEXT_PUBLIC_INTERNAL_API_KEY: ${{ secrets.NEXT_PUBLIC_INTERNAL_API_KEY }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+        run: |
+          python main.py
+
+      - name: 📤 Ejecutar upload.py
+        env:
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          SHORT_VIDEO_PATH: output/final_short.mp4
+          YOUTUBE_VIDEO_TITLE: "Shorts Factory - Hoy es ${date}"
+          YOUTUBE_VIDEO_DESCRIPTION: "Shorts generado automáticamente por la fábrica de YouTube Shorts"
+          YOUTUBE_VIDEO_TAGS: "youtube shorts, finanzas, automatizado"
+        run: |
+          python upload.py
